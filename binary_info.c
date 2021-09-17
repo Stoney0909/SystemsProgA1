@@ -2,15 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
-// #include "ELFHeader.h"
 #include "elf.h"
-///usr/include/
 
-// #if defined(__LP64__)
+
 #define ElfW(type) Elf64_##type
-// #else
-// #define ElfW(type) Elf32_##type
-// #endif
 
 int main(int argc, char **argv)
 {
@@ -149,6 +144,52 @@ int main(int argc, char **argv)
                     printf("%s\n", name);
                 }
             }
+            
+            else if(strcmp(dash, "--sections")){
+                 char* SectNames = NULL;
+                fseek(in_file, header.e_shoff + header.e_shstrndx * header.e_shentsize, SEEK_SET);
+                fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+                SectNames = malloc(sectHdr.sh_size);
+                fseek(in_file, sectHdr.sh_offset, SEEK_SET);
+                fread(SectNames, 1, sectHdr.sh_size, in_file);
+                printf("Section names from '.shstrtab':\n");
+                for (int idx = 0; idx < header.e_shnum; idx++)
+                {
+                    char *name = "";
+
+                    fseek(in_file, header.e_shoff + idx * sizeof(sectHdr), SEEK_SET);
+                    fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+
+                    // print section name
+                    if (sectHdr.sh_name)
+                        ;
+                    name = SectNames + sectHdr.sh_name;
+
+                    printf("%s", name);
+                    printf(" %" PRIu64 " ", sectHdr.sh_addr);
+                }
+
+            }
+                else if(strcmp(dash, "--section_flags")){
+
+            }
+                else if(strcmp(dash, "--symtab_names")){
+
+            }
+                else if(strcmp(dash, "--dynsym_names")){
+
+            }
+                else if(strcmp(dash, "--dynamic")){
+
+
+            }
+                else if(strcmp(dash, "--program_headers")){
+
+            }
+                else if(strcmp(dash, "--segment..rodata")){
+
+            } 
+            
             else
             {
                 printf("Incorect"); //need stderr

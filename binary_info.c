@@ -4,7 +4,6 @@
 #include <inttypes.h>
 #include "elf.h"
 
-
 #define ElfW(type) Elf64_##type
 
 int main(int argc, char **argv)
@@ -19,12 +18,24 @@ int main(int argc, char **argv)
     // {
     //     printf("Error! Could not open file\n");
     // }
+
     ElfW(Ehdr) header;
     ElfW(Shdr) sectHdr;
+    // ElfW(Sym) symtab;
+
     if (in_file)
     {
+        fseek(in_file, 0, SEEK_END);
+        long fsize = ftell(in_file);
+        fseek(in_file, 0, SEEK_SET);
+
+        char *buffer = malloc(fsize + 1);
+        fread(buffer, 1, fsize, in_file);
+
+        memcpy(&header, buffer, sizeof(header));
+
         // read the header
-        fread(&header, sizeof(header), 1, in_file);
+        // fread(&header, sizeof(header), 1, in_file);
 
         // check so its really an elf file
         if (memcmp(header.e_ident, ELFMAG, SELFMAG) == 0)
@@ -122,12 +133,26 @@ int main(int argc, char **argv)
 
             else if (strcmp(dash, "--section_names") == 0)
             {
-                char* SectNames = NULL;
+                char *SectNames = NULL;
                 fseek(in_file, header.e_shoff + header.e_shstrndx * header.e_shentsize, SEEK_SET);
                 fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+
+                // memcpy(&sectHdr, buffer+ header.e_shoff , sizeof(sectHdr)- header.e_shoff);
+                
+                
+
+                
+
+
+
                 SectNames = malloc(sectHdr.sh_size);
-                fseek(in_file, sectHdr.sh_offset, SEEK_SET);
-                fread(SectNames, 1, sectHdr.sh_size, in_file);
+
+                // fseek(in_file, sectHdr.sh_offset, SEEK_SET);
+                // fread(SectNames, 1, sectHdr.sh_size, in_file);
+                memcpy(&SectNames, buffer + sectHdr.sh_offset,sectHdr.sh_size );
+
+                
+
                 printf("Section names from '.shstrtab':\n");
                 for (int idx = 0; idx < header.e_shnum; idx++)
                 {
@@ -144,15 +169,155 @@ int main(int argc, char **argv)
                     printf("%s\n", name);
                 }
             }
-            
-            else if(strcmp(dash, "--sections")){
-                 char* SectNames = NULL;
+
+            else if (strcmp(dash, "--sections") == 0)
+            {
+                char *SectNames = NULL;
                 fseek(in_file, header.e_shoff + header.e_shstrndx * header.e_shentsize, SEEK_SET);
                 fread(&sectHdr, 1, sizeof(sectHdr), in_file);
                 SectNames = malloc(sectHdr.sh_size);
                 fseek(in_file, sectHdr.sh_offset, SEEK_SET);
                 fread(SectNames, 1, sectHdr.sh_size, in_file);
-                printf("Section names from '.shstrtab':\n");
+                printf("There are %" PRIu16 " section headers, starting at offset 0x%" PRIx64 ":\n", header.e_shnum, header.e_shoff);
+                for (int idx = 0; idx < header.e_shnum; idx++)
+                {
+                    char *name = "";
+
+                    fseek(in_file, header.e_shoff + idx * sizeof(sectHdr), SEEK_SET);
+                    fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+
+                    // print section name
+
+                    name = SectNames + sectHdr.sh_name;
+                    if (!sectHdr.sh_name)
+                    {
+                        name = "Null";
+                    }
+
+                    printf("%s", name);
+
+                    switch (sectHdr.sh_type)
+                    {
+                    case SHT_NULL:
+                        printf(" ");
+                        break;
+                    case SHT_PROGBITS:
+                        printf(" PROGBITS ");
+                        break;
+                    case SHT_SYMTAB:
+                        printf(" Symbol Table ");
+
+                    case SHT_STRTAB:
+                        printf(" SYMTAB ");
+                        break;
+                    case SHT_RELA:
+                        printf(" RELA ");
+                        break;
+                    case SHT_HASH:
+                        printf(" HASH ");
+                        break;
+                    case SHT_DYNAMIC:
+                        printf(" DYNAMIC ");
+                        break;
+
+                    case SHT_NOTE:
+                        printf(" NOTE ");
+                        break;
+
+                    case SHT_NOBITS:
+                        printf(" NOBITS ");
+                        break;
+
+                    case SHT_REL:
+                        printf(" REL ");
+                        break;
+                    case SHT_SHLIB:
+                        printf(" SHLIB ");
+                        break;
+                    case SHT_DYNSYM:
+                        printf(" DYNSYM ");
+                        break;
+                    case SHT_INIT_ARRAY:
+                        printf(" INIT_ARRAY ");
+                        break;
+                    case SHT_FINI_ARRAY:
+                        printf(" FINI_ARRAY ");
+                        break;
+                    case SHT_PREINIT_ARRAY:
+                        printf(" PREINIT_ARRAY ");
+                        break;
+                    case SHT_GROUP:
+                        printf(" GROUP ");
+                        break;
+                    case SHT_SYMTAB_SHNDX:
+                        printf(" SYMTAB_SHNDX ");
+                        break;
+                    case SHT_NUM:
+                        printf(" NUM ");
+                        break;
+                    case SHT_LOOS:
+                        printf(" LOOS ");
+                        break;
+                    case SHT_GNU_ATTRIBUTES:
+                        printf(" GNU_ATTRIBUTES ");
+                        break;
+                    case SHT_GNU_HASH:
+                        printf(" GNU_HASH ");
+                        break;
+                    case SHT_GNU_LIBLIST:
+                        printf(" GNU_LIBLIST ");
+                        break;
+                    case SHT_CHECKSUM:
+                        printf(" CHECKSUM ");
+                        break;
+                    case SHT_LOSUNW:
+                        printf(" LOSUNW ");
+                        break;
+                    case SHT_SUNW_COMDAT:
+                        printf(" SUNW_COMDAT ");
+                        break;
+                    case SHT_SUNW_syminfo:
+                        printf(" SUNW_syminfo ");
+                        break;
+                    case SHT_GNU_verdef:
+                        printf(" GNU_verdef ");
+                        break;
+                    case SHT_GNU_verneed:
+                        printf(" GNU_verneed ");
+                        break;
+                    case SHT_GNU_versym:
+                        printf(" SHT_GNU_versym ");
+                        break;
+                    case SHT_LOPROC:
+                        printf(" LOPROC ");
+                        break;
+                    case SHT_HIPROC:
+                        printf(" HIPROC ");
+                        break;
+                    case SHT_LOUSER:
+                        printf(" LOUSER ");
+                        break;
+                    case SHT_HIUSER:
+                        printf(" HIUSER ");
+                        break;
+                    default:
+                        break;
+                    }
+
+                    printf(" %" PRIx64 " ", sectHdr.sh_addr);
+                    printf(" %" PRIx64 " ", sectHdr.sh_offset);
+                    printf(" %" PRIx64 "\n", sectHdr.sh_size);
+                }
+            }
+            
+            else if (strcmp(dash, "--section_flags") == 0)
+            {
+                char *SectNames = NULL;
+                fseek(in_file, header.e_shoff + header.e_shstrndx * header.e_shentsize, SEEK_SET);
+                fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+                SectNames = malloc(sectHdr.sh_size);
+                fseek(in_file, sectHdr.sh_offset, SEEK_SET);
+                fread(SectNames, 1, sectHdr.sh_size, in_file);
                 for (int idx = 0; idx < header.e_shnum; idx++)
                 {
                     char *name = "";
@@ -165,31 +330,143 @@ int main(int argc, char **argv)
                         ;
                     name = SectNames + sectHdr.sh_name;
 
-                    printf("%s", name);
-                    printf(" %" PRIu64 " ", sectHdr.sh_addr);
+                    printf("%s ", name);
+
+                    int flags, i;
+
+                    flags = sectHdr.sh_flags;
+
+
+                    int bin[12];
+                    for (i = 0; flags > 0; i++)
+                    {
+                        bin[i]= flags%2;
+                        flags = flags/2;                         
+                    }
+
+                    for (int j = 0; j <= i-1; j++)
+                    {
+                        // printf("%d-%d\n", j, bin[j]);
+                        if (j == 0)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Writeable ");
+                            }
+                            
+                        }
+                         if (j == 1)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Alloc ");
+                            }
+                            
+                        }
+                         if (j == 2)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Exec ");
+                            }
+                            
+                        }
+                         if (j == 4)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Merge ");
+                            }
+                            
+                        }
+                         if (j == 5)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Strings ");
+                            }
+                            
+                        }
+                         if (j == 6)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Info_Link ");
+                            }
+                            
+                        }
+                         if (j == 7)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Link_Order ");
+                            }
+                            
+                        }
+                         if (j == 8)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" OS_Nonconforming ");
+                            }
+                            
+                        }
+                         if (j == 9)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Group ");
+                            }
+                            
+                        }
+                         if (j == 10)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" TLS ");
+                            }
+                            
+                        }
+                         if (j == 11)
+                        {
+                            if (bin[j] == 1)
+                            {
+                                printf(" Compressed ");
+                            }
+                            
+                        }
+                        
+                    }
+                    
+                    printf("\n");
+
+                    
                 }
-
             }
-                else if(strcmp(dash, "--section_flags")){
-
-            }
-                else if(strcmp(dash, "--symtab_names")){
-
-            }
-                else if(strcmp(dash, "--dynsym_names")){
-
-            }
-                else if(strcmp(dash, "--dynamic")){
-
-
-            }
-                else if(strcmp(dash, "--program_headers")){
-
-            }
-                else if(strcmp(dash, "--segment..rodata")){
-
-            } 
             
+            else if (strcmp(dash, "--symtab_names"))
+            {
+                
+
+
+            }
+            
+            else if (strcmp(dash, "--dynsym_names"))
+            {
+            }
+            
+            else if (strcmp(dash, "--dynamic"))
+            {
+            }
+            
+            else if (strcmp(dash, "--program_headers"))
+            {
+            }
+            
+            else if (strcmp(dash, "--segment..rodata"))
+            {
+            }
+
             else
             {
                 printf("Incorect"); //need stderr

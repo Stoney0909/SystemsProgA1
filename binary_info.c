@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 
             else if (strcmp(dash, "--sections") == 0)
             {
-                printf("There are %" PRIu16 " section headers, starting at offset 0x%" PRIx64 ":\n", header.e_shnum, header.e_shoff);
+                printf("There are %" PRIu16 " section headers, starting at offset 0x%" PRIx64 ":\n", header.e_shnum, header.e_shoff + header.e_shentsize);
                 for (int idx = 0; idx < header.e_shnum; idx++)
                 {
                     char *name = "";
@@ -931,7 +931,7 @@ int main(int argc, char **argv)
                 {
                     printf("Entry point at 0x%" PRIx64 "\n", header.e_entry);
                     printf("There are %" PRIu16 " program headers starting at offset %" PRIu64, header.e_phnum, header.e_phoff);
-                    printf("Program Headers:\n");
+                    printf("\nProgram Headers:\n");
                     printf("Type      Offset      VirtAddr      PhysAddr       FileSiz    MemSiz    Flg Allign\n");
 
                     for (int idx = 0; idx < header.e_phnum; idx++)

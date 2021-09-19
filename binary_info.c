@@ -191,6 +191,10 @@ int main(int argc, char **argv)
                     if (sectHdr.sh_name)
                         ;
                     name = SectNames + sectHdr.sh_name;
+                    if (!sectHdr.sh_name)
+                    {
+                        name = "Null";
+                    }
 
                     printf("%s\n", name);
                 }
@@ -206,6 +210,7 @@ int main(int argc, char **argv)
                     memcpy(&sectHdr, buffer + header.e_shentsize * idx + header.e_shoff, sizeof(sectHdr));
 
                     // print section name
+                    printf("[%d]", idx);
 
                     name = SectNames + sectHdr.sh_name;
                     if (!sectHdr.sh_name)
@@ -323,9 +328,9 @@ int main(int argc, char **argv)
                         break;
                     }
 
-                    printf(" %" PRIx64 " ", sectHdr.sh_addr);
-                    printf(" %" PRIx64 " ", sectHdr.sh_offset);
-                    printf(" %" PRIx64 "\n", sectHdr.sh_size);
+                    printf(" %016lu", sectHdr.sh_addr);
+                    printf(" %06lu ", sectHdr.sh_offset);
+                    printf(" %06lu \n", sectHdr.sh_size);
                 }
             }
 
@@ -464,13 +469,13 @@ int main(int argc, char **argv)
 
                         int symbol_num = sectHdr.sh_size / sectHdr.sh_entsize;
                         printf("Symbol table '.symtab' contains %d entries:\n", symbol_num);
-                        printf("Num:     Value                 Size     Type   Bind      Vis     Ndx    Name\n");
+                        printf("Num:     Value        Size     Type   Bind      Vis     Ndx    Name\n");
                         for (int i = 0; i < symbol_num; i++)
                         {
-                            printf("%d: ", i);
+                            printf("%2d: ", i);
                             memcpy(&symtab, buffer + sectHdr.sh_entsize * i + sectHdr.sh_offset, sizeof(symtab));
-                            printf(" %" PRIx64 " ", symtab.st_value);
-                            printf(" %" PRIu64 " ", symtab.st_size);
+                            printf(" %016lu ", symtab.st_value);
+                            printf(" %5lu ", symtab.st_size);
 
                             switch (ELF64_ST_TYPE(symtab.st_info))
                             {
@@ -624,8 +629,8 @@ int main(int argc, char **argv)
                         {
                             printf("%d: ", i);
                             memcpy(&dynsymtab, buffer + sectHdr.sh_entsize * i + sectHdr.sh_offset, sizeof(dynsymtab));
-                            printf(" %" PRIx64 " ", dynsymtab.st_value);
-                            printf(" %" PRIu64 " ", dynsymtab.st_size);
+                            printf(" %016lu ", dynsymtab.st_value);
+                            printf(" %4lu  ", dynsymtab.st_size);
 
                             switch (ELF64_ST_TYPE(dynsymtab.st_info))
                             {
@@ -927,7 +932,7 @@ int main(int argc, char **argv)
                     printf("Entry point at 0x%" PRIx64 "\n", header.e_entry);
                     printf("There are %" PRIu16 " program headers starting at offset %" PRIu64, header.e_phnum, header.e_phoff);
                     printf("Program Headers:\n");
-                    printf("Type      Offset      VirtAddr      PhysAddr       FileSiz    MemSiz    Flg Allign");
+                    printf("Type      Offset      VirtAddr      PhysAddr       FileSiz    MemSiz    Flg Allign\n");
 
                     for (int idx = 0; idx < header.e_phnum; idx++)
                     {
@@ -994,28 +999,30 @@ int main(int argc, char **argv)
                             break;
                         }
 
-                        printf(" 0x%" PRIx64 " ", phHdr.p_offset);
-                        printf(" 0x%" PRIx64 " ", phHdr.p_vaddr);
-                        printf(" 0x%" PRIx64 " ", phHdr.p_paddr);
-                        printf(" 0x%" PRIx64 " ", phHdr.p_filesz);
-                        printf(" 0x%" PRIx64 " ", phHdr.p_memsz);
-                        printf(" %" PRId32 " ", phHdr.p_flags);
+                        printf(" 0x%06lu ", phHdr.p_offset);
+                        printf(" 0x%016lu ", phHdr.p_vaddr);
+                        printf(" 0x%016lu ", phHdr.p_paddr);
+                        printf(" 0x%06lu ", phHdr.p_filesz);
+                        printf(" 0x%06lu ", phHdr.p_memsz);
 
-                        // switch (p_flags(phHdr.p_flags))
-                        // {
-                        // case PF_X:
-                        //     printf("X");
-                        //     break;
-                        // case PF_W:
-                        //     printf("W");
-                        //     break;
-                        // case PF_R:
-                        //     printf("R");
-                        //     break;
-                        // default:
-                        //     break;
-                        // }
+                        int flags = phHdr.p_flags;
 
+                        if (flags/4 >= 1)
+                        {
+                            printf("R");
+                            flags-=4;
+                        }
+                        if (flags/2 >= 1)
+                        {
+                            printf("W");
+                            flags-=4;
+                        }
+                        if (flags/1 >= 1)
+                        {
+                            printf("E");
+                            flags-=4;
+                        }
+                        
                         printf(" 0x%" PRIx64 " \n", phHdr.p_align);
                     }
                 }

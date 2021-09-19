@@ -104,3 +104,9 @@ Section header string table index: 12
                     //     ;
                     name = SectNames + sectHdr.sh_name;
                     printf("%s\n", SectNames);
+                    
+        // fseek(in_file, sectHdr.sh_offset, SEEK_SET);
+        // fread(SectNames, 1, sectHdr.sh_size, in_file);
+            // fseek(in_file, header.e_shoff + header.e_shstrndx * header.e_shentsize, SEEK_SET);
+        // fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+

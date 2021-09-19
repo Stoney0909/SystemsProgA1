@@ -12,16 +12,25 @@ int main(int argc, char **argv)
     // printf("%X , %s , %s, %s \n", argc, argv[0], argv[1], argv[2]);
 
     char filename[30] = "./";
+    if (argc > 3)
+    {
+        fprintf(stderr, "Multiple options or files not allowed\n");
+        exit(0);
+    }
+
     strcat(filename, argv[2]);
     FILE *in_file = fopen(filename, "rb");
 
-    // if (in_file == NULL)
-    // {
-    //     printf("Error! Could not open file\n");
-    // }
+    if (in_file == NULL)
+    {
+        fprintf(stderr, "File does not exist\n");
+        fclose(in_file);
+        exit(0);
+    }
 
     ElfW(Ehdr) header;
     ElfW(Shdr) sectHdr;
+    ElfW(Phdr) phHdr;
 
     if (in_file)
     {
@@ -31,20 +40,33 @@ int main(int argc, char **argv)
 
         char *buffer = malloc(fsize + 1);
         fread(buffer, 1, fsize, in_file);
+        fclose(in_file);
 
         memcpy(&header, buffer, sizeof(header));
-        char *SectNames = NULL;
-        fseek(in_file, header.e_shoff + header.e_shstrndx * header.e_shentsize, SEEK_SET);
-        fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+        char elf[8];
 
-        // memcpy(&sectHdr, buffer+ header.e_shoff , sizeof(sectHdr)- header.e_shoff);
+        for (int i = 1; i < 4; i++) //Print Magic Numbers
+        {
+            elf[i] = header.e_ident[i];
+        }
+        if (!(elf[1] == 'E' && elf[2] == 'L' && elf[3] == 'F'))
+        {
+            fprintf(stderr, "Not and Elf file\n");
+            exit(0);
+        }
 
-        SectNames = malloc(sectHdr.sh_size);
+    
 
-        fseek(in_file, sectHdr.sh_offset, SEEK_SET);
-        fread(SectNames, 1, sectHdr.sh_size, in_file);
+        memcpy(&sectHdr, buffer +  header.e_shoff + header.e_shstrndx * header.e_shentsize, sizeof(sectHdr));
+        // printf("Good cpy\n");
+
+        char *SectNames = malloc(sectHdr.sh_size);
+        // printf("Good cpy\n");
+
+        memcpy(SectNames, buffer + sectHdr.sh_offset, sectHdr.sh_size);
 
         char *str = NULL;
+
         for (int idx = 0; idx < header.e_shnum; idx++) //get .strtab names
         {
             char *name = "";
@@ -58,15 +80,11 @@ int main(int argc, char **argv)
 
             if (strcmp(name, ".strtab") == 0)
             {
+
                 str = (buffer + sectHdr.sh_offset);
             }
         }
-        // memcpy(&SectNames, buffer + sectHdr.sh_offset, sectHdr.sh_size);
 
-        // read the header
-        // fread(&header, sizeof(header), 1, in_file);
-
-        // check so its really an elf file
         if (memcmp(header.e_ident, ELFMAG, SELFMAG) == 0)
         {
             char dash[10];
@@ -746,8 +764,6 @@ int main(int argc, char **argv)
                 for (int idx = 0; idx < header.e_shnum; idx++)
                 {
 
-                    // char *sectBuffer = malloc(header.e_shentsize+1);
-
                     char *name = "";
 
                     memcpy(&sectHdr, buffer + header.e_shentsize * idx + header.e_shoff, sizeof(sectHdr));
@@ -762,7 +778,7 @@ int main(int argc, char **argv)
                         dynExists = 1;
 
                         int symbol_num = sectHdr.sh_size / sectHdr.sh_entsize;
-                        printf("Dynamic Section at offset %" PRIx32 " contains %d \n", sectHdr.sh_offset, symbol_num);
+                        printf("Dynamic Section at offset %" PRIx64 " contains %d \n", sectHdr.sh_offset, symbol_num);
                         printf("Tag  Type                 Name/Value\n");
                         for (int i = 0; i < symbol_num; i++)
                         {
@@ -892,6 +908,10 @@ int main(int argc, char **argv)
                             default:
                                 break;
                             }
+
+                            char *dynname = str + dyntab.d_un.d_val;
+                            printf("%s %" PRIx64, dynname, dyntab.d_un.d_ptr);
+
                             printf("\n");
                         }
                     }
@@ -904,18 +924,184 @@ int main(int argc, char **argv)
 
             else if (strcmp(dash, "--program_headers") == 0)
             {
+                if (header.e_phnum > 0)
+                {
+                    printf("Entry point at 0x%" PRIx64 "\n", header.e_entry);
+                    printf("There are %" PRIu16 " program headers starting at offset %" PRIu64, header.e_phnum, header.e_phoff);
+                    printf("Program Headers:\n");
+                    printf("Type      Offset      VirtAddr      PhysAddr       FileSiz    MemSiz    Flg Allign");
+
+                    for (int idx = 0; idx < header.e_phnum; idx++)
+                    {
+                        memcpy(&phHdr, buffer + header.e_phentsize * idx + header.e_phoff, sizeof(phHdr));
+
+                        switch (phHdr.p_type)
+                        {
+                        case PT_NULL:
+                            printf("NULL ");
+                            break;
+                        case PT_LOAD:
+                            printf("LOAD ");
+                            break;
+                        case PT_DYNAMIC:
+                            printf("DYNAMIC ");
+                            break;
+                        case PT_INTERP:
+                            printf("INTERP ");
+                            break;
+                        case PT_NOTE:
+                            printf("NOTE ");
+                            break;
+                        case PT_SHLIB:
+                            printf("SHLIB ");
+                            break;
+                        case PT_PHDR:
+                            printf("PHDR ");
+                            break;
+                        case PT_TLS:
+                            printf("TLS ");
+                            break;
+                        case PT_NUM:
+                            printf("NUM ");
+                            break;
+                        case PT_LOOS:
+                            printf("LOOS ");
+                            break;
+                        case PT_GNU_EH_FRAME:
+                            printf("GNU_EH_FRAME ");
+                            break;
+                        case PT_GNU_STACK:
+                            printf("GNU_STACK ");
+                            break;
+                        case PT_GNU_RELRO:
+                            printf("GNU_RELRO ");
+                            break;
+                        case PT_LOSUNW:
+                            printf("LOSUNW ");
+                            break;
+                        case PT_SUNWSTACK:
+                            printf("UNWSTACK ");
+                            break;
+
+                        case PT_HIOS:
+                            printf("HIOS ");
+                            break;
+                        case PT_LOPROC:
+                            printf("LOPROC ");
+                            break;
+                        case PT_HIPROC:
+                            printf("HIPROC ");
+                            break;
+                        default:
+                            break;
+                        }
+
+                        printf(" 0x%" PRIx64 " ", phHdr.p_offset);
+                        printf(" 0x%" PRIx64 " ", phHdr.p_vaddr);
+                        printf(" 0x%" PRIx64 " ", phHdr.p_paddr);
+                        printf(" 0x%" PRIx64 " ", phHdr.p_filesz);
+                        printf(" 0x%" PRIx64 " ", phHdr.p_memsz);
+                        printf(" %" PRId32 " ", phHdr.p_flags);
+
+                        // switch (p_flags(phHdr.p_flags))
+                        // {
+                        // case PF_X:
+                        //     printf("X");
+                        //     break;
+                        // case PF_W:
+                        //     printf("W");
+                        //     break;
+                        // case PF_R:
+                        //     printf("R");
+                        //     break;
+                        // default:
+                        //     break;
+                        // }
+
+                        printf(" 0x%" PRIx64 " \n", phHdr.p_align);
+                    }
+                }
+                else
+                {
+                    printf("There are no program headers.\n");
+                }
             }
 
             else if (strcmp(dash, "--segment..rodata") == 0)
             {
+                int rodata = 0;
+
+                for (int idx = 0; idx < header.e_shnum; idx++)
+                {
+
+                    // char *sectBuffer = malloc(header.e_shentsize+1);
+
+                    char *name = "";
+
+                    memcpy(&sectHdr, buffer + header.e_shentsize * idx + header.e_shoff, sizeof(sectHdr));
+
+                    // print section name
+                    if (sectHdr.sh_name)
+                        ;
+                    name = SectNames + sectHdr.sh_name;
+
+                    if (strcmp(name, ".rodata") == 0)
+                    {
+                        rodata = 1;
+                        printf("Hex dump of section '.rodata':\n");
+
+                        char rodataHex[sectHdr.sh_size + 1];
+
+                        memcpy(&rodataHex, buffer + sectHdr.sh_offset, sectHdr.sh_size);
+                        // for (int i = 0; i < sizeof(rodataHex); i++)
+                        // {
+                        //     printf("%02hhX", (rodataHex[i]);
+                        // }
+                        // printf("%s", rodataHex);
+                        // unsigned char hexholder[20];
+                        int counter = 0;
+                        int hexnumCounter = 0;
+
+                        for (int i = 0; i < sizeof(rodataHex); i++)
+                        {
+
+                            printf("%02hhx", rodataHex[i]);
+                            hexnumCounter++;
+
+                            // sprintf(hexholder[counter],  "%s", rodataHex[i]);
+                            if (i % 4 == 3)
+                            {
+                                printf(" ");
+                            }
+                            if (i % 20 == 3)
+                            {
+                                printf("    ");
+
+                                for (int j = counter; j < hexnumCounter; j++)
+                                {
+                                    printf("%c", rodataHex[j]);
+                                }
+                                printf("\n");
+
+                                counter = i + 1;
+                            }
+                        }
+                        printf("\n");
+                    }
+                }
+                if (rodata == 0)
+                {
+                    printf("No .rodata table.\n");
+                }
             }
 
             else
             {
-                printf("Incorect"); //need stderr
+                fprintf(stderr, "Incorect - Input\n");
+                exit(0);
             }
             // finally close the file
-            fclose(in_file);
+            
         }
 
         return 0;

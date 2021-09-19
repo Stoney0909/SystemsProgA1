@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 {
 
     char filename[30] = "./";
-    if (argc > 3)//error handler
+    if (argc > 3) //error handler
     {
         fprintf(stderr, "Multiple options or files not allowed\n");
         exit(0);
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
     if (in_file)
     {
-        fseek(in_file, 0, SEEK_END);//get file and put it in buffer
+        fseek(in_file, 0, SEEK_END); //get file and put it in buffer
         long fsize = ftell(in_file);
         fseek(in_file, 0, SEEK_SET);
 
@@ -54,15 +54,11 @@ int main(int argc, char **argv)
             exit(0);
         }
 
-    
-
-        memcpy(&sectHdr, buffer +  header.e_shoff + header.e_shstrndx * header.e_shentsize, sizeof(sectHdr));//get section with section names
-
+        memcpy(&sectHdr, buffer + header.e_shoff + header.e_shstrndx * header.e_shentsize, sizeof(sectHdr)); //get section with section names
 
         char *SectNames = malloc(sectHdr.sh_size);
 
-
-        memcpy(SectNames, buffer + sectHdr.sh_offset, sectHdr.sh_size);//copy section names
+        memcpy(SectNames, buffer + sectHdr.sh_offset, sectHdr.sh_size); //copy section names
 
         char *str = NULL;
 
@@ -181,7 +177,7 @@ int main(int argc, char **argv)
             {
 
                 printf("Section names from '.shstrtab':\n");
-                for (int idx = 0; idx < header.e_shnum; idx++)//iterate through sections
+                for (int idx = 0; idx < header.e_shnum; idx++) //iterate through sections
                 {
                     char *name = "";
 
@@ -780,14 +776,15 @@ int main(int argc, char **argv)
                     {
                         dynExists = 1;
 
-                        int symbol_num = sectHdr.sh_size / sectHdr.sh_entsize;
-                        printf("Dynamic Section at offset %" PRIx64 " contains %d \n", sectHdr.sh_offset, symbol_num);
+                        int symbol_num = sectHdr.sh_size / sectHdr.sh_entsize - 5;
+                        printf("Dynamic Section at offset 0x%" PRIx64 " contains %d \n", sectHdr.sh_offset, symbol_num);
                         printf("Tag  Type                 Name/Value\n");
                         for (int i = 0; i < symbol_num; i++)
                         {
-                            printf("%d: ", i);
+                            // printf("%d: ", i);
                             memcpy(&dyntab, buffer + sectHdr.sh_entsize * i + sectHdr.sh_offset, sizeof(dyntab));
-                            printf(" %" PRIX64 " ", dyntab.d_tag);
+                            printf(" 0x%016lx ", dyntab.d_tag);
+
                             switch (dyntab.d_tag)
                             {
                             case DT_NULL:
@@ -838,7 +835,7 @@ int main(int argc, char **argv)
                             case DT_RPATH:
                                 printf("(DT_RPATH)");
                                 break;
-                            case DT_SYMBOLIC:
+                            case DT_SYMBOLIC:s
                                 printf("(SYMBOLIC)");
                                 break;
                             case DT_REL:
@@ -907,13 +904,127 @@ int main(int argc, char **argv)
                             case DT_HIPROC:
                                 printf("(HIPROC)");
                                 break;
+                            case DT_VALRNGLO:
+                                printf("(VALRNGLO)");
+                                break;
+                            case DT_GNU_PRELINKED:
+                                printf("(GNU_PRELINKED)");
+                                break;
+                            case DT_GNU_CONFLICTSZ:
+                                printf("(GNU_CONFLICTSZ)");
+                                break;
+                            case DT_GNU_LIBLISTSZ:
+                                printf("(GNU_LIBLISTSZ)");
+                                break;
+                            case DT_CHECKSUM:
+                                printf("(CHECKSUM)");
+                                break;
+                            case DT_PLTPADSZ:
+                                printf("(PLTPADSZ)");
+                                break;
+                            case DT_MOVEENT:
+                                printf("(MOVEENT)");
+                                break;
+                            case DT_MOVESZ:
+                                printf("(MOVESZ)");
+                                break;
+                            case DT_FEATURE_1:
+                                printf("(FEATURE_1)");
+                                break;
+                            case DT_POSFLAG_1:
+                                printf("(POSFLAG_1)");
+                                break;
+                            case DT_SYMINSZ:
+                                printf("(SYMINSZ)");
+                                break;
+                            case DT_SYMINENT:
+                                printf("(SYMINENT)");
+                                break;
+                            // case DT_VALRNGHI:
+                            //     printf("(VALRNGHI)");
+                            //     break;
+                            case DT_ADDRRNGLO:
+                                printf("(ADDRRNGLO)");
+                                break;
+                            case DT_GNU_HASH:
+                                printf("(GNU_HASH)");
+                                break;
+                            case DT_TLSDESC_PLT:
+                                printf("(TLSDESC_PLT)");
+                                break;
+                            case DT_TLSDESC_GOT:
+                                printf("(TLSDESC_GOT)");
+                                break;
+                            case DT_GNU_CONFLICT:
+                                printf("(GNU_CONFLICT)");
+                                break;
+                            case DT_GNU_LIBLIST:
+                                printf("(GNU_LIBLIST)");
+                                break;
+                            case DT_CONFIG:
+                                printf("(CONFIG)");
+                                break;
+                            case DT_DEPAUDIT:
+                                printf("(DEPAUDIT)");
+                                break;
+                            case DT_AUDIT:
+                                printf("(AUDIT)");
+                                break;
+                            case DT_PLTPAD:
+                                printf("(PLTPAD)");
+                                break;
+                            case DT_MOVETAB:
+                                printf("(MOVETAB)");
+                                break;
+                            case DT_SYMINFO:
+                                printf("(SYMINFO)");
+                                break;
+                            // case DT_ADDRRNGHI:
+                            //     printf("(ADDRRNGHI)");
+                            //     break;
+                            case DT_VERSYM:
+                                printf("(VERSYM)");
+                                break;
+                            case DT_RELACOUNT:
+                                printf("(RELACOUNT)");
+                                break;
+                            case DT_RELCOUNT:
+                                printf("(RELCOUNT)");
+                                break;
+                            case DT_FLAGS_1:
+                                printf("(FLAGS_1)");
+                                break;
+                            case DT_VERDEF:
+                                printf("(VERDEF)");
+                                break;
+                            case DT_VERDEFNUM:
+                                printf("(VERDEFNUM)");
+                                break;
+                            case DT_VERNEED:
+                                printf("(VERNEED)");
+                                break;
+                            case DT_VERNEEDNUM:
+                                printf("(VERNEEDNUM)");
+                                break;
+                            case DT_AUXILIARY:
+                                printf("(AUXILIARY)");
+                                break;
+                            // case DT_FILTER:
+                            //     printf("(FILTER)");
+                            //     break;
 
                             default:
                                 break;
                             }
 
-                            char *dynname = str + dyntab.d_un.d_val;
-                            printf("%s %" PRIx64, dynname, dyntab.d_un.d_ptr);
+                            if (dyntab.d_un.d_ptr == 1)
+                            {
+                                printf("            Shared Library:");
+                            }
+                            else
+                            {
+                                printf("                  %" PRIx64, dyntab.d_un.d_ptr);
+                            }
 
                             printf("\n");
                         }
@@ -927,6 +1038,7 @@ int main(int argc, char **argv)
 
             else if (strcmp(dash, "--program_headers") == 0)
             {
+                printf("%x", header.e_phnum);
                 if (header.e_phnum > 0)
                 {
                     printf("Entry point at 0x%" PRIx64 "\n", header.e_entry);
@@ -1007,22 +1119,22 @@ int main(int argc, char **argv)
 
                         int flags = phHdr.p_flags;
 
-                        if (flags/4 >= 1)
+                        if (flags / 4 >= 1)
                         {
                             printf("R");
-                            flags-=4;
+                            flags -= 4;
                         }
-                        if (flags/2 >= 1)
+                        if (flags / 2 >= 1)
                         {
                             printf("W");
-                            flags-=4;
+                            flags -= 4;
                         }
-                        if (flags/1 >= 1)
+                        if (flags / 1 >= 1)
                         {
                             printf("E");
-                            flags-=4;
+                            flags -= 4;
                         }
-                        
+
                         printf(" 0x%" PRIx64 " \n", phHdr.p_align);
                     }
                 }
@@ -1106,7 +1218,6 @@ int main(int argc, char **argv)
                 exit(0);
             }
             // finally close the file
-            
         }
 
         return 0;

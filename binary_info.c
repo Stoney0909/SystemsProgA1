@@ -9,10 +9,9 @@
 
 int main(int argc, char **argv)
 {
-    // printf("%X , %s , %s, %s \n", argc, argv[0], argv[1], argv[2]);
 
     char filename[30] = "./";
-    if (argc > 3)
+    if (argc > 3)//error handler
     {
         fprintf(stderr, "Multiple options or files not allowed\n");
         exit(0);
@@ -34,7 +33,7 @@ int main(int argc, char **argv)
 
     if (in_file)
     {
-        fseek(in_file, 0, SEEK_END);
+        fseek(in_file, 0, SEEK_END);//get file and put it in buffer
         long fsize = ftell(in_file);
         fseek(in_file, 0, SEEK_SET);
 
@@ -45,7 +44,7 @@ int main(int argc, char **argv)
         memcpy(&header, buffer, sizeof(header));
         char elf[8];
 
-        for (int i = 1; i < 4; i++) //Print Magic Numbers
+        for (int i = 1; i < 4; i++) //error handling for if it is a elf file
         {
             elf[i] = header.e_ident[i];
         }
@@ -57,13 +56,13 @@ int main(int argc, char **argv)
 
     
 
-        memcpy(&sectHdr, buffer +  header.e_shoff + header.e_shstrndx * header.e_shentsize, sizeof(sectHdr));
-        // printf("Good cpy\n");
+        memcpy(&sectHdr, buffer +  header.e_shoff + header.e_shstrndx * header.e_shentsize, sizeof(sectHdr));//get section with section names
+
 
         char *SectNames = malloc(sectHdr.sh_size);
-        // printf("Good cpy\n");
 
-        memcpy(SectNames, buffer + sectHdr.sh_offset, sectHdr.sh_size);
+
+        memcpy(SectNames, buffer + sectHdr.sh_offset, sectHdr.sh_size);//copy section names
 
         char *str = NULL;
 
@@ -182,12 +181,11 @@ int main(int argc, char **argv)
             {
 
                 printf("Section names from '.shstrtab':\n");
-                for (int idx = 0; idx < header.e_shnum; idx++)
+                for (int idx = 0; idx < header.e_shnum; idx++)//iterate through sections
                 {
                     char *name = "";
 
-                    fseek(in_file, header.e_shoff + idx * sizeof(sectHdr), SEEK_SET);
-                    fread(&sectHdr, 1, sizeof(sectHdr), in_file);
+                    memcpy(&sectHdr, buffer + header.e_shentsize * idx + header.e_shoff, sizeof(sectHdr));
 
                     // print section name
                     if (sectHdr.sh_name)

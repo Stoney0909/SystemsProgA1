@@ -5,6 +5,9 @@
 #include "elf.h"
 #include <sys/mman.h>
 
+
+
+
 #define ElfW(type) Elf64_##type
 
 int main(int argc, char **argv)
@@ -16,14 +19,25 @@ int main(int argc, char **argv)
         fprintf(stderr, "Multiple options or files not allowed\n");
         exit(0);
     }
-
+    FILE *in_file;
     strcat(filename, argv[2]);
-    FILE *in_file = fopen(filename, "rb");
+     char *buffer;
 
-    if (in_file == NULL)
+    
+
+    if (in_file = fopen(filename, "rb"))
+    {
+        fseek(in_file, 0, SEEK_END); //get file and put it in buffer
+        long fsize = ftell(in_file);
+        fseek(in_file, 0, SEEK_SET);
+
+        buffer = malloc(fsize + 1);
+        fread(buffer, 1, fsize, in_file);
+        fclose(in_file);
+    }
+    else
     {
         fprintf(stderr, "File does not exist\n");
-        fclose(in_file);
         exit(0);
     }
 
@@ -33,13 +47,7 @@ int main(int argc, char **argv)
 
     if (in_file)
     {
-        fseek(in_file, 0, SEEK_END); //get file and put it in buffer
-        long fsize = ftell(in_file);
-        fseek(in_file, 0, SEEK_SET);
-
-        char *buffer = malloc(fsize + 1);
-        fread(buffer, 1, fsize, in_file);
-        fclose(in_file);
+        
 
         memcpy(&header, buffer, sizeof(header));
         char elf[8];
@@ -82,8 +90,21 @@ int main(int argc, char **argv)
 
         if (memcmp(header.e_ident, ELFMAG, SELFMAG) == 0)
         {
+            char actualSegment[30];
+            char segmentCheck[11];
             char dash[10];
             sprintf(dash, "%s", argv[1]);
+            if (sizeof(dash) > 10)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    segmentCheck[i] = dash[i];
+                }
+                for (int i = 10; i < sizeof(dash); i++)
+                {
+                    actualSegment[i - 10] = dash[i];
+                }
+            }
 
             printf("File: %s\n", argv[2]); //output
 
@@ -835,7 +856,7 @@ int main(int argc, char **argv)
                             case DT_RPATH:
                                 printf("(DT_RPATH)");
                                 break;
-                            case DT_SYMBOLIC:s
+                            case DT_SYMBOLIC:
                                 printf("(SYMBOLIC)");
                                 break;
                             case DT_REL:
@@ -1009,9 +1030,9 @@ int main(int argc, char **argv)
                             case DT_AUXILIARY:
                                 printf("(AUXILIARY)");
                                 break;
-                            // case DT_FILTER:
-                            //     printf("(FILTER)");
-                            //     break;
+                                // case DT_FILTER:
+                                //     printf("(FILTER)");
+                                //     break;
 
                             default:
                                 break;
@@ -1144,7 +1165,7 @@ int main(int argc, char **argv)
                 }
             }
 
-            else if (strcmp(dash, "--segment..rodata") == 0)
+            else if (strcmp(segmentCheck, "--segment.") == 0)
             {
                 int rodata = 0;
 
@@ -1162,10 +1183,10 @@ int main(int argc, char **argv)
                         ;
                     name = SectNames + sectHdr.sh_name;
 
-                    if (strcmp(name, ".rodata") == 0)
+                    if (strcmp(name, actualSegment) == 0)
                     {
                         rodata = 1;
-                        printf("Hex dump of section '.rodata':\n");
+                        printf("Hex dump of section '%s':\n", actualSegment);
 
                         char rodataHex[sectHdr.sh_size + 1];
 
